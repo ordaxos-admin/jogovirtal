@@ -2,7 +2,7 @@
 
 Pet virtual em realidade aumentada que existe na câmera do celular, percebe superfícies e evolui para comportamentos inteligentes com IA opcional.
 
-**Estado atual: fundação e primeira vertical slice Android (não validada em aparelho).** Não declarar APK funcional sem build + teste no celular.
+**Estado atual: fundação e primeira vertical slice Android.** Build de depuração e 3 testes unitários aprovados em 25/10/2026; o teste de funcionamento em **celular ARCore ainda não foi realizado**. O APK é técnico, não uma versão final.
 
 ## Para quê?
 O primeiro objetivo é um pet 3D original ancorado em um plano real, com interação por toque, humor/energia persistentes e funcionamento offline. Depois entram reconhecimento de objetos, profundidade/occlusion, navegação, conversa e voz.
