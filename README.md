@@ -18,12 +18,13 @@ Kotlin + Jetpack Compose + [SceneView](https://github.com/SceneView/sceneview) 4
 - `docs/research/2026-10-25-pesquisa-completa.md` — relatório integral.
 - `docs/research/REFERENCES.md` — bibliotecas, referências e ressalvas de licença.
 - `docs/decisions/` — decisões arquiteturais.
+- `docs/TROUBLESHOOTING-AR.md` — diagnóstico de ARCore e modo 3D de compatibilidade.
 
 ## Executar (requer Android Studio / SDK 37 / JDK 21)
 1. Abrir a pasta raiz no Android Studio compatível com AGP 9.4.
 2. Rodar `./gradlew :app:assembleDebug :app:testDebugUnitTest` (no Windows, `gradlew.bat`).
-3. Instalar em **dispositivo físico com ARCore** e autorizar a câmera.
-4. Mover o celular até reconhecer um plano; tocar no chão para posicionar o pet.
+3. Instalar em Android com API 24+; quando o aparelho tiver ARCore, autorizar a câmera para o modo AR. Se não tiver, o jogo abre o bichinho em modo 3D.
+4. No modo AR, mover o celular até reconhecer um plano e tocar no chão para posicionar; no modo 3D, interagir sem câmera.
 5. Usar o botão de carinho para alterar humor e energia; reiniciar e verificar persistência.
 
 O teste real é obrigatório; a imagem do APK e a compatibilidade dependem do hardware e SDK.
