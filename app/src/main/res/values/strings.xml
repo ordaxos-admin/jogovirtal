@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JogoVirtal</string>
+    <string name="camera_permission">A câmera é usada somente neste aparelho, para posicionar o bichinho no ambiente.</string>
+</resources>

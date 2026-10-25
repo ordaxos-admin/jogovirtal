@@ -1,0 +1,22 @@
+name: Android verification
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 37
+        run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
+      - name: Validate generated pet asset
+        run: node --test scripts/generate-pet.test.mjs
+      - name: Build and test
+        run: bash ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleDebug
