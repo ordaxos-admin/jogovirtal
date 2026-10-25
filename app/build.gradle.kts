@@ -13,8 +13,8 @@ android {
         applicationId = "app.jogovirtal"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.1-dev.2"
+        versionCode = 3
+        versionName = "0.1.2-dev.3"
     }
 
     buildFeatures { compose = true }
@@ -36,5 +36,9 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("io.github.sceneview:arsceneview:4.62.0")
+    // Camera-only fallback for Android devices that lack ARCore certification.
+    implementation("androidx.camera:camera-camera2:1.6.2")
+    implementation("androidx.camera:camera-lifecycle:1.6.2")
+    implementation("androidx.camera:camera-view:1.6.2")
     testImplementation("junit:junit:4.13.2")
 }
