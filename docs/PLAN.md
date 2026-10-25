@@ -1,45 +1,40 @@
-# Plano de execução — JogoVirtal
+# Plano de engenharia — JogoVirtal
 
-Atualizado: 2026-10-25. Estado: desenvolvimento inicial; **nenhuma compilação Android ou teste em telefone aprovado ainda**.
+Data-base: 2026-10-25. Este documento separa **entregue no código**, **validado** e **planejado**. Nunca presumir conclusão a partir apenas de um commit.
 
-## Visão de produto
-Um pet 3D persistente no ambiente filmado, que encontra superfícies, reage a toque e a objetos reais, mantém necessidades e personalidade e pode conversar. O loop gráfico e comportamental deve funcionar offline. IA generativa não controla a física nem recebe stream contínuo da câmera.
+## Meta
 
-## Prioridades e gates de aceite
-| Fase | Entrega | Gate objetivo |
-|---|---|---|
-| F0 — Fundação e pesquisa | Documentação, arquitetura, referências, licenças e política de privacidade; MVP Android definido | Fonte da verdade nos arquivos de docs; dependências identificadas |
-| F1 — Primeiro pet em AR | APK Android, permissão de câmera, plano real, pet GLB criado pelo próprio projeto, âncora após toque, botão de carinho | Teste no aparelho compatível com ARCore; funcionamento sem internet; teste unitário de estado |
-| F2 — Mundo persistente | Persistência de humor/energia, reposicionamento, UI de alimentação, fluxo de reinício, ciclo de animações | Dados sobrevivem reinício; ausência de estado duplicado; ausência de vazamento de anchors |
-| F3 — Entendimento local | Interface PerceptionProvider; MediaPipe/LiteRT para poucas classes; objeto->evento semântico | Desempenho mensurado, descarte de frames, câmera não sai do aparelho |
-| F4 — Presença espacial | Depth/occlusion em aparelhos capazes, limites de navegação, degradação graciosa | Pet não atravessa grosseiramente móveis no roteiro de QA |
-| F5 — Personalidade e IA | Contratos de intent JSON validados, consentimento explícito, VLM por snapshot e LLM apenas por evento, custos/quotas | Offline funcional; sem chaves no cliente; política de retenção e teste de falhas |
-| F6 — Experiência de produto | Voz local, tutorial, compatibilidade, acessibilidade, arte/animações, iOS planejado | Medição de bateria/fps, publicação somente após QA |
+Um animal virtual que existe no espaço real: detecta piso/mesa, reage a interação humana, possui memória/necessidades e, em etapas posteriores, percebe objetos e conversa sobre o contexto. Android-first para provar a experiência em hardware modesto; portar depois sem duplicar o motor.
 
-## Recorte técnico inicial
-- Android primeiro, Kotlin + Jetpack Compose + SceneView 4.62.0 / ARCore.
-- JDK 21, AGP 9.4.1, Gradle 9.8.1, Kotlin/Compose 2.4.21, compileSdk 37, minSdk 24.
-- AR requerido na primeira vertical slice. O modo sem AR e iOS entram após prova de F1.
-- Pet gerado originalmente por script local, com arquivo GLB versionado e sem asset de terceiros.
-- PetState/PetRules puros, camada UI desacoplada; nenhuma API cloud na F1.
-- Use o menor conjunto de dependências possível.
+## Marcos / Definition of Done
 
-## Ordem imediata
-1. Salvar a pesquisa integral e uma lista auditável de referências/licenças.
-2. Criar scaffold e pet original, API do domínio e testes.
-3. Rodar build + testes em ambiente com JDK 21, Android SDK 37 e Gradle 9.8.1; se ausentes, registrar bloqueio (não inventar aprovação).
-4. Testar abertura, permissão, plano, inserção do pet e reação ao toque em dispositivo Android ARCore.
-5. Corrigir falhas estruturais antes de ampliar escopo.
+| Marco | Entrega | Validação obrigatória | Estado |
+|---|---|---|---|
+| M0 Fundação | Repositório, documentação, bibliografia, matriz jurídica, projeto Android, asset de teste e testes unitários | Arquivos versionados, testes da lógica, tentativa de build | Em implementação |
+| M1 AR jogável | Permissão de câmera, planos e âncora; modelo pet; ações tocar/alimentar/descansar; estado persistente | Build APK, instalação e vídeo de teste em **celular ARCore** | Pendente de dispositivo |
+| M2 Mundo físico | Depth quando disponível, oclusão visual e deslocamento seguro; fallback quando indisponível | Testes em pelo menos um aparelho sem sensor depth avançado | Planejado |
+| M3 Percepção | MediaPipe/LiteRT para 3 classes úteis (pessoa, bola, cadeira), frames amostrados; world model | Latência, precisão e bateria medidas, offline | Planejado |
+| M4 Personalidade | FSM/árvore de comportamento, emoções e preferências; memória local com migrações de schema | Testes de transições, restauração após matar/reabrir app | Planejado |
+| M5 IA opcional | Provedor substituível (cloud/local), snapshot somente por consentimento, intents JSON validados | Sem vídeo contínuo, offline degradado, ações não inventadas | Planejado |
+| M6 Voz e beta | Voz local, interação por fala e ajustes visuais; QA e políticas de privacidade | Benchmarks FPS/bateria, acessibilidade, consentimento | Planejado |
+| M7 iOS | Interface nativa ARKit/RealityKit com mesmo contrato do pet | Teste em iPhone real; sem fork do estado/decisões | Futuro |
 
-## Definição de concluído
-"F1 concluída" requer APK compilado, testes automatizados passando e execução observada no hardware. Apenas código commitado **não** significa funcionalidade validada. Para cada fase, atualizar este arquivo e abrir PR somente quando necessário, com evidência objetiva.
+## Ordem de trabalho imediato
 
-## Não fazer
-- Não portar Unity, Godot, Flutter ou React Native junto no primeiro ciclo.
-- Não instalar LLM grande ou enviar vídeo continuamente para nuvem.
-- Não implementar física/colisão como delegação a um LLM.
-- Não criar dados falsos de compatibilidade, métricas, testes ou custos.
-- Não copiar pet 3D ou código de outros jogos sem licença expressa.
+1. Validar o projeto Gradle em ambiente com JDK 21 / SDK 37.
+2. Instalar em celular ARCore para provar permissão, plano, anchor, escala e animação.
+3. Resolver eventuais incompatibilidades SceneView, apenas pela causa raiz.
+4. Adicionar testes instrumentados e medição de início, FPS e memória.
+5. Avançar para depth/occlusion antes de qualquer LLM.
 
-## Bloqueio da publica��o de workflow
-A credencial de publica��o atual n�o possui escopo OAuth de workflows. O YAML candidato est� em docs/ci/github-actions-android.yml; n�o est� ativo em GitHub Actions. Ativar ap�s autoriza��o adequada e validar assembleDebug e testes no CI.
+## Restrições / riscos
+
+- ARCore principal é serviço do Google (proprietário), apesar de exemplos Apache-2.0. Não prometer pilha inteiramente OSS.
+- SceneView 4.62.0 exige toolchain de 2026: AGP 9.4+, Kotlin 2.4+, JVM 21, compileSdk 37.
+- Dispositivos, sombras, relocalização, calor, bateria e oclusão diferem entre modelos.
+- Assets 3D têm licença independente; não empacotar mídia de terceiros sem atribuição.
+- Não oferecer o app como seguro para público infantil antes de revisão especializada.
+
+## Regra de implementação
+
+Um dono para cada estado: session tracking do ARCore; entidades espaciais do WorldModel; humor/necessidades do PetReducer; persistência do PetPreferences; provider de IA não altera diretamente estas estruturas. Telemetria da câmera desligada por padrão.
