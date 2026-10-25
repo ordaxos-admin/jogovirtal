@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +33,7 @@ import androidx.core.content.ContextCompat
 import app.jogovirtal.domain.PetRules
 import app.jogovirtal.domain.PetStore
 import com.google.ar.core.Anchor
+import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
 import io.github.sceneview.ar.ARSceneView
@@ -82,12 +84,25 @@ private fun PetExperience() {
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraGranted) {
             var anchor by remember { mutableStateOf<Anchor?>(null) }
+            // An ARCore anchor consumes resources. Detach the previous one on
+            // replacement, permission-related disposal or screen destruction.
+            DisposableEffect(anchor) {
+                val ownedAnchor = anchor
+                onDispose { ownedAnchor?.detach() }
+            }
             // Do not trigger Compose recomposition on every 30-60 fps AR frame.
             val latestFrame = remember { AtomicReference<Frame?>(null) }
 
             ARSceneView(
                 modifier = Modifier.fillMaxSize(),
                 planeRenderer = true,
+                sessionConfiguration = { session, config ->
+                    config.depthMode =
+                        if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC))
+                            Config.DepthMode.AUTOMATIC
+                        else Config.DepthMode.DISABLED
+                    config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+                },
                 onSessionUpdated = { _, frame -> latestFrame.set(frame) },
                 onGestureListener = rememberOnGestureListener(
                     onSingleTapConfirmed = { event, node ->
