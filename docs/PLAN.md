@@ -1,6 +1,6 @@
 # Plano de execução — JogoVirtal
 
-Atualizado: 2026-10-25. Estado: desenvolvimento inicial; **compilação Android e testes unitários locais aprovados** (Gradle 9.8.1, JDK 21, SDK 37.0, 3/3 testes, APK debug de 46.225.351 bytes). **Teste em telefone ARCore ainda pendente.**
+Atualizado: 2026-10-25. Estado: desenvolvimento Android; compilação local de versão anterior e 3 testes unitários aprovados. Usuário enviou captura confirmando que o fallback 3D abre corretamente num celular sem ARCore. Modo câmera CameraX é a próxima validação presencial; RA espacial em celular certificado continua pendente.
 
 ## Visão de produto
 Um pet 3D persistente no ambiente filmado, que encontra superfícies, reage a toque e a objetos reais, mantém necessidades e personalidade e pode conversar. O loop gráfico e comportamental deve funcionar offline. IA generativa não controla a física nem recebe stream contínuo da câmera.
@@ -19,7 +19,7 @@ Um pet 3D persistente no ambiente filmado, que encontra superfícies, reage a to
 ## Recorte técnico inicial
 - Android primeiro, Kotlin + Jetpack Compose + SceneView 4.62.0 / ARCore.
 - JDK 21, AGP 9.4.1, Gradle 9.8.1, Kotlin/Compose 2.4.21, compileSdk 37, minSdk 24.
-- AR requerido na primeira vertical slice. O modo sem AR e iOS entram após prova de F1.
+- ARCore é opcional em execução: aparelho certificado recebe RA espacial; demais aparelhos recebem modo 3D offline e prévia CameraX com pet sobreposto (sem âncoras). O iOS permanece planejado.
 - Pet gerado originalmente por script local, com arquivo GLB versionado e sem asset de terceiros.
 - PetState/PetRules puros, camada UI desacoplada; nenhuma API cloud na F1.
 - Use o menor conjunto de dependências possível.

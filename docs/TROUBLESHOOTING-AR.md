@@ -36,3 +36,17 @@ adb logcat -d -s JogoVirtal:E ARCore:E SceneView:E
 Fontes: https://developers.google.com/ar/develop/java/enable-arcore e https://developers.google.com/ar/devices e https://sceneview.github.io/docs/troubleshooting/
 
 **Estado do relato:** sem modelo do celular e sem dispositivo ADB disponível na máquina de build. Diagnóstico exato não confirmado.
+
+
+## Evidência da execução no celular (25/10/2026)
+
+O usuário enviou uma captura da versão 0.1.1-dev.2 com status explícito `UNSUPPORTED_DEVICE_NOT_CAPABLE`: a detecção ARCore, a transição para modo 3D e o render do asset original foram observados. A captura também revelou falhas de apresentação: fundo preto, pet pequeno, diagnóstico longo ocupando o topo e botão de retentativa sobre a área de navegação.
+
+A correção 0.1.2-dev.3 inclui:
+- Cena 3D maior, com fundo degradê e controles que respeitam as barras de sistema.
+- Diagnóstico técnico oculto sob 'Detalhes'; a incompatibilidade deixa de dominar a tela.
+- Prévia de câmera alternativa via **CameraX 1.6.2** em aparelhos sem ARCore, com bichinho 3D sobreposto em transparência. Ela não detecta planos, não ancora o pet no mundo e não deve ser chamada de RA espacial.
+- Modo 3D offline continua independente da câmera; o pet compartilha a mesma persistência.
+- Prévia libera o vínculo da câmera ao sair da tela. Não há captura/salvamento/transmissão das imagens.
+
+**Critério pendente:** o render composto CameraX + SceneView TextureSurface e o posicionamento visual ainda exigem verificação em aparelho real; testes Kotlin/Gradle não demonstram que as duas superfícies se sobrepõem corretamente em todas as GPUs.

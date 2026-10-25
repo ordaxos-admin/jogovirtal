@@ -14,13 +14,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -31,8 +35,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import app.jogovirtal.domain.PetRules
@@ -43,6 +49,7 @@ import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
 import io.github.sceneview.SceneView
+import io.github.sceneview.SurfaceType
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.createAnchorOrNull
 import io.github.sceneview.rememberModelInstance
@@ -50,7 +57,7 @@ import io.github.sceneview.rememberOnGestureListener
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.delay
 
-private enum class ViewMode { CHECKING, AR, MODEL_3D }
+private enum class ViewMode { CHECKING, AR, MODEL_3D, CAMERA_PET }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +71,6 @@ private fun PetExperience() {
     val context = LocalContext.current
     val store = remember(context) { PetStore(context.applicationContext) }
     var pet by remember(store) { mutableStateOf(store.load()) }
-
     var cameraGranted by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -75,10 +81,10 @@ private fun PetExperience() {
         ActivityResultContracts.RequestPermission()
     ) { granted -> cameraGranted = granted }
 
-    // The 3D pet is a first-class fallback: no ARCore installation, camera, or network required.
     var viewMode by remember { mutableStateOf(ViewMode.CHECKING) }
     var arAvailability by remember { mutableStateOf(ArCoreApk.Availability.UNKNOWN_CHECKING) }
     var arError by remember { mutableStateOf<String?>(null) }
+    var showDiagnostics by remember { mutableStateOf(false) }
     var checkVersion by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(checkVersion) {
@@ -97,28 +103,28 @@ private fun PetExperience() {
                     ArCoreApk.Availability.SUPPORTED_INSTALLED -> viewMode = ViewMode.AR
                     ArCoreApk.Availability.SUPPORTED_APK_TOO_OLD,
                     ArCoreApk.Availability.SUPPORTED_NOT_INSTALLED -> {
-                        arError = "O serviço de realidade aumentada precisa ser instalado ou atualizado."
+                        arError = "Instale ou atualize os Serviços do Google Play para RA."
                         viewMode = ViewMode.MODEL_3D
                     }
                     ArCoreApk.Availability.UNSUPPORTED_DEVICE_NOT_CAPABLE -> {
-                        arError = "Este aparelho não tem suporte ao ARCore. O bichinho funciona em 3D."
+                        arError = "Este celular não suporta RA espacial. O pet continua disponível."
                         viewMode = ViewMode.MODEL_3D
                     }
                     else -> {
-                        arError = "Não foi possível verificar o ARCore. Use o modo 3D ou tente novamente."
+                        arError = "Não foi possível verificar o ARCore."
                         viewMode = ViewMode.MODEL_3D
                     }
                 }
             }
-        } catch (exception: Exception) {
-            Log.w("JogoVirtal", "ARCore compatibility check failed", exception)
-            arError = "Verificação do ARCore falhou: ${exception.javaClass.simpleName}"
+        } catch (error: Exception) {
+            Log.w("JogoVirtal", "ARCore compatibility check failed", error)
+            arError = "Verificação de RA indisponível: ${error.javaClass.simpleName}"
             viewMode = ViewMode.MODEL_3D
         }
     }
 
     LaunchedEffect(viewMode) {
-        if (viewMode == ViewMode.AR) {
+        if (viewMode == ViewMode.AR || viewMode == ViewMode.CAMERA_PET) {
             cameraGranted =
                 ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
                     PackageManager.PERMISSION_GRANTED
@@ -127,31 +133,57 @@ private fun PetExperience() {
     }
 
     val careForPet = {
-        val next = PetRules.pet(pet)
-        store.save(next)
-        pet = next
+        val updated = PetRules.pet(pet)
+        store.save(updated)
+        pet = updated
     }
     val restPet = {
-        val next = PetRules.rest(pet)
-        store.save(next)
-        pet = next
+        val updated = PetRules.rest(pet)
+        store.save(updated)
+        pet = updated
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(
+            Brush.verticalGradient(
+                listOf(Color(0xFF252D43), Color(0xFF505B78), Color(0xFF141827))
+            )
+        )
+    ) {
         when (viewMode) {
-            ViewMode.CHECKING -> {
-                Text(
-                    "Verificando suporte à realidade aumentada...",
-                    modifier = Modifier.align(Alignment.Center).padding(24.dp)
-                )
-            }
+            ViewMode.CHECKING -> Text(
+                "Verificando a câmera e a realidade aumentada...",
+                modifier = Modifier.align(Alignment.Center).padding(24.dp),
+                textAlign = TextAlign.Center,
+                color = Color.White
+            )
+
             ViewMode.MODEL_3D -> {
-                SceneView(modifier = Modifier.fillMaxSize()) {
-                    rememberModelInstance(modelLoader, "models/pet.glb")?.let { instance ->
-                        ModelNode(modelInstance = instance, scaleToUnits = 0.35f, autoAnimate = true)
+                SceneView(
+                    modifier = Modifier.fillMaxSize(),
+                    surfaceType = SurfaceType.TextureSurface,
+                    isOpaque = false
+                ) {
+                    rememberModelInstance(modelLoader, "models/pet.glb")?.let {
+                        ModelNode(modelInstance = it, scaleToUnits = 0.95f, autoAnimate = true)
                     }
                 }
             }
+
+            ViewMode.CAMERA_PET -> {
+                if (cameraGranted) {
+                    CameraPetView { message ->
+                        arError = message
+                        viewMode = ViewMode.MODEL_3D
+                    }
+                } else {
+                    CameraPermissionPanel(
+                        onRequest = { cameraRequest.launch(Manifest.permission.CAMERA) },
+                        onContinueWithoutCamera = { viewMode = ViewMode.MODEL_3D }
+                    )
+                }
+            }
+
             ViewMode.AR -> {
                 if (cameraGranted) {
                     var anchor by remember { mutableStateOf<Anchor?>(null) }
@@ -159,7 +191,6 @@ private fun PetExperience() {
                         val ownedAnchor = anchor
                         onDispose { ownedAnchor?.detach() }
                     }
-                    // ARCore gives a fresh Frame frequently. Avoid 30–60 recompositions/sec.
                     val latestFrame = remember { AtomicReference<Frame?>(null) }
                     ARSceneView(
                         modifier = Modifier.fillMaxSize(),
@@ -171,14 +202,14 @@ private fun PetExperience() {
                                 else Config.DepthMode.DISABLED
                             config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                         },
-                        onSessionFailed = { exception ->
-                            Log.e("JogoVirtal", "AR session failed", exception)
-                            arError = "Falha ao iniciar AR: ${exception.javaClass.simpleName}"
+                        onSessionFailed = { error ->
+                            Log.e("JogoVirtal", "AR session failed", error)
+                            arError = "A realidade aumentada não iniciou: ${error.javaClass.simpleName}"
                             viewMode = ViewMode.MODEL_3D
                         },
                         onARCoreAvailability = { availability ->
                             if (availability != null) {
-                                arError = "O serviço ARCore não está pronto neste aparelho."
+                                arError = "Serviços de realidade aumentada indisponíveis."
                                 viewMode = ViewMode.MODEL_3D
                             }
                         },
@@ -204,79 +235,145 @@ private fun PetExperience() {
                         val model = rememberModelInstance(modelLoader, "models/pet.glb")
                         anchor?.let { placed ->
                             AnchorNode(anchor = placed) {
-                                model?.let {
-                                    ModelNode(modelInstance = it, scaleToUnits = 0.35f)
-                                }
+                                model?.let { ModelNode(modelInstance = it, scaleToUnits = 0.35f) }
                             }
                         }
                     }
                 } else {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("A câmera precisa de autorização para usar a realidade aumentada.")
-                        Button(onClick = {
-                            cameraRequest.launch(Manifest.permission.CAMERA)
-                        }) { Text("Permitir câmera") }
-                        OutlinedButton(onClick = { viewMode = ViewMode.MODEL_3D }) {
-                            Text("Usar em 3D sem câmera")
-                        }
-                    }
+                    CameraPermissionPanel(
+                        onRequest = { cameraRequest.launch(Manifest.permission.CAMERA) },
+                        onContinueWithoutCamera = { viewMode = ViewMode.MODEL_3D }
+                    )
                 }
             }
         }
 
+        // Respect system status bar and keep this panel short to preserve scene space.
         Column(
             modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.70f)).padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .statusBarsPadding().background(Color(0xDE161B2B))
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             Text("JogoVirtal", color = Color.White, style = MaterialTheme.typography.titleLarge)
             Text(
                 when (viewMode) {
-                    ViewMode.AR -> "Modo AR: toque numa superfície para posicionar o bichinho"
-                    ViewMode.MODEL_3D -> "Modo 3D: bichinho virtual sem câmera"
-                    ViewMode.CHECKING -> "Verificando o celular..."
+                    ViewMode.AR -> "Toque no chão ou mesa para posicionar o bichinho"
+                    ViewMode.MODEL_3D -> "Seu bichinho em 3D"
+                    ViewMode.CAMERA_PET -> "Câmera + pet na tela (sem rastreamento espacial)"
+                    ViewMode.CHECKING -> "Preparando seu bichinho..."
                 },
-                color = Color.White
+                color = Color(0xFFDCE6F5),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall
             )
-            arError?.let { Text(it, color = Color.White) }
-            if (viewMode == ViewMode.MODEL_3D && arError != null) {
-                Text("Diagnóstico ARCore: ${arAvailability.name}", color = Color.White)
-            }
             Text(
-                "Humor: ${pet.mood.name} • Energia: ${pet.energy} • Carinho: ${pet.affection}",
-                color = Color.White
+                "Humor: ${pet.mood.name}  •  Energia: ${pet.energy}  •  Carinho: ${pet.affection}",
+                color = Color.White,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center
             )
+            if (showDiagnostics) {
+                arError?.let {
+                    Text(it, color = Color(0xFFFFD9A0), style = MaterialTheme.typography.bodySmall)
+                }
+                Text(
+                    "ARCore: ${arAvailability.name}",
+                    color = Color.LightGray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
 
         Column(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                .navigationBarsPadding().background(Color(0xD71C2436))
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Button(onClick = careForPet) { Text("Fazer carinho") }
-            Button(onClick = restPet) { Text("Descansar") }
-            when (viewMode) {
-                ViewMode.AR -> OutlinedButton(onClick = { viewMode = ViewMode.MODEL_3D }) {
-                    Text("Modo 3D")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(onClick = careForPet, modifier = Modifier.weight(1f)) {
+                    Text("Fazer carinho")
                 }
+                Button(onClick = restPet, modifier = Modifier.weight(1f)) {
+                    Text("Descansar")
+                }
+            }
+
+            when (viewMode) {
                 ViewMode.MODEL_3D -> {
+                    Button(
+                        onClick = { viewMode = ViewMode.CAMERA_PET },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Ver bichinho pela câmera")
+                    }
                     if (arAvailability == ArCoreApk.Availability.SUPPORTED_NOT_INSTALLED ||
                         arAvailability == ArCoreApk.Availability.SUPPORTED_APK_TOO_OLD
                     ) {
-                        OutlinedButton(onClick = {
-                            val uri = Uri.parse("https://play.google.com/store/apps/details?id=com.google.ar.core")
-                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                        }) { Text("Instalar/atualizar serviços de RA") }
+                        TextButton(onClick = {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://play.google.com/store/apps/details?id=com.google.ar.core")
+                                )
+                            )
+                        }) { Text("Instalar serviços de RA", color = Color.White) }
                     }
-                    OutlinedButton(onClick = { checkVersion++ }) { Text("Tentar AR novamente") }
                 }
+                ViewMode.CAMERA_PET -> OutlinedButton(
+                    onClick = { viewMode = ViewMode.MODEL_3D },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Voltar ao modo 3D", color = Color.White) }
+                ViewMode.AR -> OutlinedButton(
+                    onClick = { viewMode = ViewMode.MODEL_3D },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Modo 3D", color = Color.White) }
                 ViewMode.CHECKING -> OutlinedButton(
-                    onClick = { viewMode = ViewMode.MODEL_3D }
-                ) { Text("Continuar sem AR") }
+                    onClick = { viewMode = ViewMode.MODEL_3D },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Abrir sem AR", color = Color.White) }
             }
+
+            TextButton(onClick = { showDiagnostics = !showDiagnostics }) {
+                Text(if (showDiagnostics) "Ocultar diagnóstico" else "Detalhes da câmera e RA",
+                    color = Color(0xFFCEDAF0),
+                    style = MaterialTheme.typography.bodySmall)
+            }
+            if (showDiagnostics && viewMode == ViewMode.MODEL_3D &&
+                arAvailability != ArCoreApk.Availability.UNSUPPORTED_DEVICE_NOT_CAPABLE
+            ) {
+                TextButton(onClick = { checkVersion++ }) {
+                    Text("Verificar RA novamente", color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CameraPermissionPanel(
+    onRequest: () -> Unit,
+    onContinueWithoutCamera: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            "Para ver o bichinho pela câmera, permita o acesso à câmera.",
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+        Button(onClick = onRequest) { Text("Permitir câmera") }
+        OutlinedButton(onClick = onContinueWithoutCamera) {
+            Text("Continuar sem câmera", color = Color.White)
         }
     }
 }

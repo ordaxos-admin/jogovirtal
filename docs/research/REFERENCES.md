@@ -38,6 +38,9 @@ Atualizado em 2026-10-25. **Link verificado como referência**, não significa q
 - [Android Gradle Plugin 9.4 (compatibilidade)](https://developer.android.com/build/releases/agp-9-4-0-release-notes) — Gradle mínimo 9.6.
 - [Kotlin Gradle compatibility](https://kotlinlang.org/docs/gradle-configure-project.html) — 2.4.21 não lista AGP 9.4 como faixa totalmente testada; verificar build.
 - [Android Manifest e câmera](https://developer.android.com/training/permissions/requesting).
+- [CameraX 1.6.2 — bibliotecas e versões estáveis](https://developer.android.com/jetpack/androidx/releases/camera) — prévia de câmera em dispositivos sem certificação ARCore; licenças AndroidX Apache-2.0.
+- [CameraX — PreviewView e ciclo de vida](https://developer.android.com/media/camera/camerax/architecture) — vincular apenas a prévia ao ciclo de vida, sem gravação nem transmissão.
+- [SceneView — composição transparente e TextureSurface](https://sceneview.github.io/docs/troubleshooting/) — pet renderizado sobre a imagem da câmera; ainda exige teste em telefone.
 
 ## Produtos legados / cautela
 - Meta Spark encerrado para efeitos de terceiros em 2025; **não usar**.
