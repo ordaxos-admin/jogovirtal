@@ -1,6 +1,6 @@
 # Plano de execução — JogoVirtal
 
-Atualizado: 2026-10-25. Estado: desenvolvimento inicial; **nenhuma compilação Android ou teste em telefone aprovado ainda**.
+Atualizado: 2026-10-25. Estado: desenvolvimento inicial; **compilação Android e testes unitários locais aprovados** (Gradle 9.8.1, JDK 21, SDK 37.0, 3/3 testes, APK debug de 46.225.351 bytes). **Teste em telefone ARCore ainda pendente.**
 
 ## Visão de produto
 Um pet 3D persistente no ambiente filmado, que encontra superfícies, reage a toque e a objetos reais, mantém necessidades e personalidade e pode conversar. O loop gráfico e comportamental deve funcionar offline. IA generativa não controla a física nem recebe stream contínuo da câmera.
